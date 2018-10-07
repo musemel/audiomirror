@@ -1,12 +1,12 @@
 package jay.audiomirror
 
 import android.Manifest.permission.RECORD_AUDIO
-import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.os.Build.VERSION.SDK_INT
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat.startForegroundService
 
 class MainActivity : AppCompatActivity() {
 
@@ -23,11 +23,8 @@ class MainActivity : AppCompatActivity() {
       return
     }
 
-    startFgService(Intent(this, AudioMirrorService::class.java))
+    startForegroundService(this, Intent(this, AudioMirrorService::class.java))
   }
-
-  private fun startFgService(intent: Intent): ComponentName? =
-    if (SDK_INT >= 28) startForegroundService(intent) else startService(intent)
 
   override fun onRequestPermissionsResult(
     requestCode: Int,

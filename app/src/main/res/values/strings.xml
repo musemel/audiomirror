@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="appName">Audio Mirror</string>
+  <string name="active">Audio Mirror is active</string>
+  <string name="inactive">Audio Mirror is muted</string>
+  <string name="unmute">Unmute</string>
+  <string name="mute">Mute</string>
+  <string name="channel">Activity notification</string>
 </resources>
