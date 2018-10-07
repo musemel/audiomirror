@@ -6,12 +6,16 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioAttributes
 import android.media.AudioAttributes.CONTENT_TYPE_MUSIC
 import android.media.AudioAttributes.USAGE_MEDIA
 import android.media.AudioFormat
 import android.media.AudioFormat.*
+import android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY
 import android.media.AudioManager.STREAM_MUSIC
 import android.media.AudioRecord
 import android.media.AudioTrack
@@ -57,17 +61,18 @@ class AudioMirrorService : Service() {
       AUDIO_SESSION_ID
     )
 
+  private val noisyAudioReceiver = NoisyAudioReceiver()
+
   override fun onBind(intent: Intent?) = null
 
   override fun onCreate() {
     if (SDK_INT >= 28) createNotifChannel()
     start()
+
+    registerReceiver(noisyAudioReceiver, IntentFilter(ACTION_AUDIO_BECOMING_NOISY))
   }
 
-  override fun onDestroy() {
-    stopping = true
-    stop()
-  }
+  override fun onDestroy() = stop()
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     when (intent?.action) {
@@ -100,6 +105,7 @@ class AudioMirrorService : Service() {
   }
 
   private fun stop() {
+    stopping = true
     mute()
   }
 
@@ -158,6 +164,13 @@ class AudioMirrorService : Service() {
       ).also {
         notificationManager.createNotificationChannel(it)
       }
+
+  inner class NoisyAudioReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context?, intent: Intent?) {
+      if (intent?.action != ACTION_AUDIO_BECOMING_NOISY) return
+      mute()
+    }
+  }
 
   companion object {
     private const val SAMPLE_RATE = 44100
