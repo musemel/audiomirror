@@ -66,7 +66,7 @@ class AudioMirrorService : Service() {
   override fun onBind(intent: Intent?) = null
 
   override fun onCreate() {
-    if (SDK_INT >= 28) createNotifChannel()
+    if (SDK_INT >= 26) createNotifChannel()
     start()
 
     registerReceiver(noisyAudioReceiver, IntentFilter(ACTION_AUDIO_BECOMING_NOISY))
