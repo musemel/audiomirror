@@ -7,18 +7,55 @@ import android.app.PendingIntent
 import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.app.Service
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.AudioAttributes.CONTENT_TYPE_MUSIC
+import android.media.AudioAttributes.USAGE_MEDIA
+import android.media.AudioFormat
+import android.media.AudioFormat.*
+import android.media.AudioManager.STREAM_MUSIC
+import android.media.AudioRecord
+import android.media.AudioTrack
+import android.media.AudioTrack.MODE_STREAM
+import android.media.MediaRecorder.AudioSource.MIC
 import android.os.Build.VERSION.SDK_INT
 import androidx.core.app.NotificationCompat
 import jay.audiomirror.BuildConfig.APPLICATION_ID
+import java.nio.ByteBuffer
+import kotlin.concurrent.thread
 
 
 class AudioMirrorService : Service() {
 
   private var stopping = false
+  private var muted = false
 
   private val notificationManager: NotificationManager by lazy {
     getSystemService(NOTIFICATION_SERVICE) as NotificationManager
   }
+
+  private val inputBufferSize =
+    AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_IN_MONO, FORMAT_ENCODING)
+  private val outputBufferSize =
+    AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_OUT_MONO, FORMAT_ENCODING)
+
+  private val input =
+    AudioRecord(MIC, SAMPLE_RATE, CHANNEL_IN_MONO, FORMAT_ENCODING, inputBufferSize)
+  private val output =
+    AudioTrack(
+      AudioAttributes.Builder().apply {
+        setLegacyStreamType(STREAM_MUSIC)
+        setUsage(USAGE_MEDIA)
+        setContentType(CONTENT_TYPE_MUSIC)
+      }.build(),
+      AudioFormat.Builder().apply {
+        setChannelMask(CHANNEL_OUT_MONO)
+        setEncoding(FORMAT_ENCODING)
+        setSampleRate(SAMPLE_RATE)
+      }.build(),
+      outputBufferSize,
+      MODE_STREAM,
+      AUDIO_SESSION_ID
+    )
 
   override fun onBind(intent: Intent?) = null
 
@@ -46,6 +83,9 @@ class AudioMirrorService : Service() {
   }
 
   private fun unmute() {
+    muted = false
+    startLoop()
+
     val muteIntent = Intent(this, AudioMirrorService::class.java).setAction(ACTION_MUTE)
     val mutePendingIntent = PendingIntent.getService(this, 0, muteIntent, FLAG_UPDATE_CURRENT)
 
@@ -64,6 +104,8 @@ class AudioMirrorService : Service() {
   }
 
   private fun mute() {
+    muted = true
+
     val unmuteIntent = Intent(this, AudioMirrorService::class.java).setAction(ACTION_UNMUTE)
     val unmutePendingIntent = PendingIntent.getService(this, 0, unmuteIntent, FLAG_UPDATE_CURRENT)
 
@@ -83,6 +125,30 @@ class AudioMirrorService : Service() {
     if (!stopping) notificationManager.notify(NOTIFICATION_ID, notif)
   }
 
+  private fun startLoop() {
+    thread {
+      try {
+        input.startRecording()
+        output.play()
+
+        val buffer = ByteBuffer.allocateDirect(inputBufferSize)
+        val data = ByteArray(inputBufferSize)
+
+        while (!muted) {
+          val size = input.read(buffer, inputBufferSize)
+          buffer.get(data)
+          buffer.rewind()
+          output.write(data, 0, size)
+        }
+
+        input.stop()
+        output.stop()
+      } catch (e: Throwable) {
+        e.printStackTrace()
+      }
+    }
+  }
+
   @TargetApi(26)
   private fun createNotifChannel() =
     notificationManager.getNotificationChannel(NOTIFICATION_CHANNEL)
@@ -94,9 +160,14 @@ class AudioMirrorService : Service() {
       }
 
   companion object {
+    private const val SAMPLE_RATE = 44100
+    private const val FORMAT_ENCODING = ENCODING_PCM_16BIT
+    private const val AUDIO_SESSION_ID = 1
+
     private const val ACTION_UNMUTE = "$APPLICATION_ID.UNMUTE"
     private const val ACTION_MUTE = "$APPLICATION_ID.MUTE"
     private const val ACTION_KILL = "$APPLICATION_ID.KILL"
+
     private const val NOTIFICATION_ID = 1
     private const val NOTIFICATION_CHANNEL = "$APPLICATION_ID.ACTIVITY"
   }
