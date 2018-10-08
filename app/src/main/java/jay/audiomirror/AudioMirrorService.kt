@@ -22,14 +22,12 @@ import android.media.AudioTrack
 import android.media.AudioTrack.MODE_STREAM
 import android.media.MediaRecorder.AudioSource.MIC
 import android.os.Build.VERSION.SDK_INT
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import jay.audiomirror.BuildConfig.APPLICATION_ID
-import java.nio.ByteBuffer
 import kotlin.concurrent.thread
 
-
 class AudioMirrorService : Service() {
-
   private var stopping = false
   private var muted = false
 
@@ -61,7 +59,10 @@ class AudioMirrorService : Service() {
       AUDIO_SESSION_ID
     )
 
-  private val noisyAudioReceiver = NoisyAudioReceiver()
+  private val noisyAudioReceiver = object : BroadcastReceiver() {
+    override fun onReceive(context: Context?, intent: Intent?) =
+      if (intent?.action == ACTION_AUDIO_BECOMING_NOISY) mute() else Unit
+  }
 
   override fun onBind(intent: Intent?) = null
 
@@ -131,45 +132,34 @@ class AudioMirrorService : Service() {
     if (!stopping) notificationManager.notify(NOTIFICATION_ID, notif)
   }
 
-  private fun startLoop() {
-    thread {
-      try {
-        input.startRecording()
-        output.play()
+  private fun startLoop() = thread {
+    try {
+      input.startRecording()
+      output.play()
 
-        val buffer = ByteBuffer.allocateDirect(inputBufferSize)
-        val data = ByteArray(inputBufferSize)
+      val buffer = ByteArray(inputBufferSize)
 
-        while (!muted) {
-          val size = input.read(buffer, inputBufferSize)
-          buffer.get(data)
-          buffer.rewind()
-          output.write(data, 0, size)
-        }
-
-        input.stop()
-        output.stop()
-      } catch (e: Throwable) {
-        e.printStackTrace()
+      if (!muted) {
+        val size = input.read(buffer, 0, inputBufferSize)
+        output.write(buffer, 0, size)
       }
+
+      input.stop()
+      output.stop()
+    } catch (e: Throwable) {
+      Log.e("AudioMirrorService", "Error with audio record or track", e)
     }
   }
 
   @TargetApi(26)
-  private fun createNotifChannel() =
-    notificationManager.getNotificationChannel(NOTIFICATION_CHANNEL)
-      ?: NotificationChannel(
-        NOTIFICATION_CHANNEL, getString(R.string.channel),
-        NotificationManager.IMPORTANCE_LOW
-      ).also {
-        notificationManager.createNotificationChannel(it)
-      }
+  private fun createNotifChannel(): NotificationChannel {
+    val channel = notificationManager.getNotificationChannel(NOTIFICATION_CHANNEL)
+    if (channel != null) return channel
 
-  inner class NoisyAudioReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context?, intent: Intent?) {
-      if (intent?.action != ACTION_AUDIO_BECOMING_NOISY) return
-      mute()
-    }
+    return NotificationChannel(
+      NOTIFICATION_CHANNEL, getString(R.string.channel),
+      NotificationManager.IMPORTANCE_LOW
+    ).also(notificationManager::createNotificationChannel)
   }
 
   companion object {
