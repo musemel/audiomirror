@@ -139,7 +139,7 @@ class AudioMirrorService : Service() {
 
       val buffer = ByteArray(inputBufferSize)
 
-      if (!muted) {
+      while (!muted) {
         val size = input.read(buffer, 0, inputBufferSize)
         output.write(buffer, 0, size)
       }
