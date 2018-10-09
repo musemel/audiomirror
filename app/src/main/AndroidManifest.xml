@@ -4,7 +4,6 @@
   package="jay.audiomirror">
 
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-
   <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
   <uses-feature
@@ -27,8 +26,15 @@
       </intent-filter>
     </activity>
 
-    <service android:name=".AudioMirrorService" />
-
+    <service
+      android:name=".AudioMirrorService"
+      tools:ignore="ExportedService">
+      <intent-filter>
+        <action android:name="jay.audiomirror.MUTE" />
+        <action android:name="jay.audiomirror.UNMUTE" />
+        <action android:name="jay.audiomirror.KILL" />
+      </intent-filter>
+    </service>
   </application>
 
 </manifest>

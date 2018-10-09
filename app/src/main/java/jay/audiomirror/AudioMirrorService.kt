@@ -172,8 +172,8 @@ class AudioMirrorService : Service() {
     private const val FORMAT_ENCODING = ENCODING_PCM_16BIT
     private const val AUDIO_SESSION_ID = 1
 
-    private const val ACTION_UNMUTE = "$APPLICATION_ID.UNMUTE"
     private const val ACTION_MUTE = "$APPLICATION_ID.MUTE"
+    private const val ACTION_UNMUTE = "$APPLICATION_ID.UNMUTE"
     private const val ACTION_KILL = "$APPLICATION_ID.KILL"
 
     private const val NOTIFICATION_ID = 1
