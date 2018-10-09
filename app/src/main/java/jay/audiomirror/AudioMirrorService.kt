@@ -85,12 +85,12 @@ class AudioMirrorService : Service() {
   }
 
   private fun start() {
+    startLoop()
     unmute()
   }
 
   private fun unmute() {
     muted = false
-    startLoop()
 
     val muteIntent = Intent(this, AudioMirrorService::class.java).setAction(ACTION_MUTE)
     val mutePendingIntent = PendingIntent.getService(this, 0, muteIntent, FLAG_UPDATE_CURRENT)
@@ -139,7 +139,12 @@ class AudioMirrorService : Service() {
 
       val buffer = ByteArray(inputBufferSize)
 
-      while (!muted) {
+      while (!stopping) {
+        if (muted) {
+          Thread.sleep(100)
+          continue
+        }
+
         val size = input.read(buffer, 0, inputBufferSize)
         output.write(buffer, 0, size)
       }
