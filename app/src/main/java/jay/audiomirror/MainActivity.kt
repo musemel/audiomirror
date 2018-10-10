@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.os.Build.VERSION.SDK_INT
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat.startForegroundService
 
@@ -19,10 +20,12 @@ class MainActivity : AppCompatActivity() {
 
   private fun runService() {
     if (SDK_INT >= 23 && checkSelfPermission(RECORD_AUDIO) != PERMISSION_GRANTED) {
+      Log.d("MainActivity", "Requesting record audio permissions")
       requestPermissions(arrayOf(RECORD_AUDIO), 0)
       return
     }
 
+    Log.d("MainActivity", "Starting service")
     startForegroundService(this, Intent(this, AudioMirrorService::class.java))
   }
 

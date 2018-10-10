@@ -54,13 +54,19 @@ class AudioMirrorService : Service() {
     )
 
   private val noisyAudioReceiver = object : BroadcastReceiver() {
-    override fun onReceive(context: Context?, intent: Intent?) =
-      if (intent?.action == ACTION_AUDIO_BECOMING_NOISY) mute() else Unit
+    override fun onReceive(context: Context?, intent: Intent?) {
+      if (intent?.action != ACTION_AUDIO_BECOMING_NOISY) return
+
+      Log.d("AudioMirrorService", "Received noisy audio broadcast, muting audio")
+      mute()
+    }
   }
 
   override fun onBind(intent: Intent?) = null
 
   override fun onCreate() {
+    Log.d("AudioMirrorService", "Service created")
+
     if (SDK_INT >= 26) notification.createNotificationChannel()
     start()
 
@@ -70,6 +76,8 @@ class AudioMirrorService : Service() {
   override fun onDestroy() = stop()
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    Log.d("AudioMirrorService", "Received command, action: ${intent?.action}")
+
     when (intent?.action) {
       ACTION_UNMUTE -> unmute()
       ACTION_MUTE -> mute()
@@ -79,26 +87,31 @@ class AudioMirrorService : Service() {
   }
 
   private fun start() {
+    Log.d("AudioMirrorService", "Starting")
     startLoop()
     unmute()
   }
 
   private fun unmute() {
+    Log.d("AudioMirrorService", "Unmuting audio")
     muted = false
     notification.update()
   }
 
   private fun stop() {
+    Log.d("AudioMirrorService", "Stopping")
     stopping = true
     mute()
   }
 
   private fun mute() {
+    Log.d("AudioMirrorService", "Muting audio")
     muted = true
     notification.update()
   }
 
   private fun startLoop() = thread {
+    Log.d("AudioMirrorService", "Starting record loop")
     try {
       input.startRecording()
       output.play()
@@ -109,11 +122,14 @@ class AudioMirrorService : Service() {
         val size = input.read(buffer, 0, inputBufferSize)
         output.write(buffer, 0, size)
       }
-
-      input.stop()
-      output.stop()
     } catch (e: Throwable) {
       Log.e("AudioMirrorService", "Error with audio record or track", e)
+    } finally {
+      try {
+        input.stop()
+        output.stop()
+      } catch (e: Throwable) {
+      }
     }
   }
 

@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.content.Context.NOTIFICATION_SERVICE
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import jay.audiomirror.AudioMirrorService.Companion.ACTION_KILL
 import jay.audiomirror.AudioMirrorService.Companion.ACTION_MUTE
@@ -21,12 +22,17 @@ class ActivityNotification(private val service: AudioMirrorService) {
   }
 
   @TargetApi(26)
-  fun createNotificationChannel(): NotificationChannel =
-    notificationManager.getNotificationChannel(CHANNEL)
+  fun createNotificationChannel(): NotificationChannel {
+    Log.d(javaClass.simpleName, "Creating notification channel")
+
+    return notificationManager.getNotificationChannel(CHANNEL)
       ?: NotificationChannel(CHANNEL, service.getString(R.string.channel), IMPORTANCE_LOW)
         .also(notificationManager::createNotificationChannel)
+  }
 
   fun update() {
+    Log.d(javaClass.simpleName, "Updating notification")
+
     val toggleIntent = PendingIntent.getService(
       service, /* request code */ 0,
       Intent(service, AudioMirrorService::class.java)
