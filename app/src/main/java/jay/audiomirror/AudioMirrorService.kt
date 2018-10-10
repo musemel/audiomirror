@@ -1,10 +1,5 @@
 package jay.audiomirror
 
-import android.annotation.TargetApi
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -23,17 +18,16 @@ import android.media.AudioTrack.MODE_STREAM
 import android.media.MediaRecorder.AudioSource.MIC
 import android.os.Build.VERSION.SDK_INT
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import jay.audiomirror.BuildConfig.APPLICATION_ID
 import kotlin.concurrent.thread
 
 class AudioMirrorService : Service() {
-  private var stopping = false
-  private var muted = false
+  var stopping = false
+    private set
+  var muted = false
+    private set
 
-  private val notificationManager: NotificationManager by lazy {
-    getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-  }
+  private val notification = ActivityNotification(this)
 
   private val inputBufferSize =
     AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_IN_MONO, FORMAT_ENCODING)
@@ -67,7 +61,7 @@ class AudioMirrorService : Service() {
   override fun onBind(intent: Intent?) = null
 
   override fun onCreate() {
-    if (SDK_INT >= 26) createNotifChannel()
+    if (SDK_INT >= 26) notification.createNotificationChannel()
     start()
 
     registerReceiver(noisyAudioReceiver, IntentFilter(ACTION_AUDIO_BECOMING_NOISY))
@@ -91,18 +85,7 @@ class AudioMirrorService : Service() {
 
   private fun unmute() {
     muted = false
-
-    val muteIntent = Intent(this, AudioMirrorService::class.java).setAction(ACTION_MUTE)
-    val mutePendingIntent = PendingIntent.getService(this, 0, muteIntent, FLAG_UPDATE_CURRENT)
-
-    val notif = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL).apply {
-      setContentTitle(getString(R.string.active))
-      setSmallIcon(R.drawable.mic)
-      addAction(R.drawable.mic_off, getString(R.string.mute), mutePendingIntent)
-      setOngoing(true)
-    }.build()
-
-    startForeground(NOTIFICATION_ID, notif)
+    notification.update()
   }
 
   private fun stop() {
@@ -112,24 +95,7 @@ class AudioMirrorService : Service() {
 
   private fun mute() {
     muted = true
-
-    val unmuteIntent = Intent(this, AudioMirrorService::class.java).setAction(ACTION_UNMUTE)
-    val unmutePendingIntent = PendingIntent.getService(this, 0, unmuteIntent, FLAG_UPDATE_CURRENT)
-
-    val deleteIntent = Intent(this, AudioMirrorService::class.java).setAction(ACTION_KILL)
-    val deletePendingIntent = PendingIntent.getService(this, 0, deleteIntent, FLAG_UPDATE_CURRENT)
-
-    val notif = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL).apply {
-      setContentTitle(getString(R.string.inactive))
-      setSmallIcon(R.drawable.mic_off)
-      addAction(R.drawable.mic, getString(R.string.unmute), unmutePendingIntent)
-      setDeleteIntent(deletePendingIntent)
-
-      setOngoing(false)
-    }.build()
-
-    stopForeground(stopping)
-    if (!stopping) notificationManager.notify(NOTIFICATION_ID, notif)
+    notification.update()
   }
 
   private fun startLoop() = thread {
@@ -139,12 +105,7 @@ class AudioMirrorService : Service() {
 
       val buffer = ByteArray(inputBufferSize)
 
-      while (!stopping) {
-        if (muted) {
-          Thread.sleep(100)
-          continue
-        }
-
+      while (!stopping) if (muted) Thread.sleep(100) else {
         val size = input.read(buffer, 0, inputBufferSize)
         output.write(buffer, 0, size)
       }
@@ -156,27 +117,13 @@ class AudioMirrorService : Service() {
     }
   }
 
-  @TargetApi(26)
-  private fun createNotifChannel(): NotificationChannel {
-    val channel = notificationManager.getNotificationChannel(NOTIFICATION_CHANNEL)
-    if (channel != null) return channel
-
-    return NotificationChannel(
-      NOTIFICATION_CHANNEL, getString(R.string.channel),
-      NotificationManager.IMPORTANCE_LOW
-    ).also(notificationManager::createNotificationChannel)
-  }
-
   companion object {
     private const val SAMPLE_RATE = 44100
     private const val FORMAT_ENCODING = ENCODING_PCM_16BIT
     private const val AUDIO_SESSION_ID = 1
 
-    private const val ACTION_MUTE = "$APPLICATION_ID.MUTE"
-    private const val ACTION_UNMUTE = "$APPLICATION_ID.UNMUTE"
-    private const val ACTION_KILL = "$APPLICATION_ID.KILL"
-
-    private const val NOTIFICATION_ID = 1
-    private const val NOTIFICATION_CHANNEL = "$APPLICATION_ID.ACTIVITY"
+    const val ACTION_MUTE = "$APPLICATION_ID.MUTE"
+    const val ACTION_UNMUTE = "$APPLICATION_ID.UNMUTE"
+    const val ACTION_KILL = "$APPLICATION_ID.KILL"
   }
 }
