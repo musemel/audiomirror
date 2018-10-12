@@ -32,7 +32,9 @@
       <intent-filter>
         <action android:name="jay.audiomirror.MUTE" />
         <action android:name="jay.audiomirror.UNMUTE" />
-        <action android:name="jay.audiomirror.KILL" />
+        <action android:name="jay.audiomirror.START" />
+        <action android:name="jay.audiomirror.STOP" />
+        <action android:name="jay.audiomirror.RESTART" />
       </intent-filter>
     </service>
   </application>

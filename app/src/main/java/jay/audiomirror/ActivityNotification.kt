@@ -9,9 +9,9 @@ import android.content.Context.NOTIFICATION_SERVICE
 import android.content.Intent
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import jay.audiomirror.AudioMirrorService.Companion.ACTION_KILL
 import jay.audiomirror.AudioMirrorService.Companion.ACTION_MUTE
 import jay.audiomirror.AudioMirrorService.Companion.ACTION_RESTART
+import jay.audiomirror.AudioMirrorService.Companion.ACTION_STOP
 import jay.audiomirror.AudioMirrorService.Companion.ACTION_UNMUTE
 import jay.audiomirror.BuildConfig.APPLICATION_ID
 
@@ -50,7 +50,7 @@ class ActivityNotification(private val service: AudioMirrorService) {
     val deleteIntent = PendingIntent.getService(
       service, /* request code */ 0,
       Intent(service, AudioMirrorService::class.java)
-        .setAction(ACTION_KILL),
+        .setAction(ACTION_STOP),
       FLAG_UPDATE_CURRENT
     )
 

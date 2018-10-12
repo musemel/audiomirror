@@ -73,7 +73,7 @@ class AudioMirrorService : Service(), OnSharedPreferenceChangeListener {
       ACTION_UNMUTE -> unmute()
       ACTION_MUTE -> mute()
       ACTION_START -> start()
-      ACTION_KILL -> stopSelf()
+      ACTION_STOP -> stopSelf()
       ACTION_RESTART -> restart()
     }
     return START_STICKY
@@ -90,7 +90,7 @@ class AudioMirrorService : Service(), OnSharedPreferenceChangeListener {
 
     if (::input.isInitialized) input.release()
     if (::output.isInitialized) output.release()
-    
+
     input =
       AudioRecord(audioSource, sampleRate, CHANNEL_IN_MONO, ENCODING_PCM_16BIT, inputBufferSize)
     output =
@@ -185,7 +185,7 @@ class AudioMirrorService : Service(), OnSharedPreferenceChangeListener {
     const val ACTION_MUTE = "$APPLICATION_ID.MUTE"
     const val ACTION_UNMUTE = "$APPLICATION_ID.UNMUTE"
     const val ACTION_START = "$APPLICATION_ID.START"
-    const val ACTION_KILL = "$APPLICATION_ID.KILL"
+    const val ACTION_STOP = "$APPLICATION_ID.STOP"
     const val ACTION_RESTART = "$APPLICATION_ID.RESTART"
   }
 }
