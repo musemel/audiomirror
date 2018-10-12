@@ -64,7 +64,10 @@ class AudioMirrorService : Service(), OnSharedPreferenceChangeListener {
     registerReceiver(noisyAudioReceiver, IntentFilter(ACTION_AUDIO_BECOMING_NOISY))
   }
 
-  override fun onDestroy() = stop()
+  override fun onDestroy() {
+    stop()
+    unregisterReceiver(noisyAudioReceiver)
+  }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     Log.d("AudioMirrorService", "Received command, action: ${intent?.action}")
