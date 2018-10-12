@@ -1,10 +1,8 @@
 package jay.audiomirror
 
 import android.app.Service
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.content.*
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.media.AudioAttributes
 import android.media.AudioAttributes.CONTENT_TYPE_MUSIC
 import android.media.AudioAttributes.USAGE_MEDIA
@@ -17,11 +15,12 @@ import android.media.AudioTrack
 import android.media.AudioTrack.MODE_STREAM
 import android.media.MediaRecorder.AudioSource.MIC
 import android.os.Build.VERSION.SDK_INT
+import android.preference.PreferenceManager
 import android.util.Log
 import jay.audiomirror.BuildConfig.APPLICATION_ID
 import kotlin.concurrent.thread
 
-class AudioMirrorService : Service() {
+class AudioMirrorService : Service(), OnSharedPreferenceChangeListener {
   var stopping = false
     private set
   var muted = false
@@ -31,29 +30,16 @@ class AudioMirrorService : Service() {
 
   private val notification = ActivityNotification(this)
 
-  private val inputBufferSize =
-    AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_IN_MONO, FORMAT_ENCODING)
-  private val outputBufferSize =
-    AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_OUT_MONO, FORMAT_ENCODING)
+  private lateinit var prefs: SharedPreferences
 
-  private val input =
-    AudioRecord(MIC, SAMPLE_RATE, CHANNEL_IN_MONO, FORMAT_ENCODING, inputBufferSize)
-  private val output =
-    AudioTrack(
-      AudioAttributes.Builder().apply {
-        setLegacyStreamType(STREAM_MUSIC)
-        setUsage(USAGE_MEDIA)
-        setContentType(CONTENT_TYPE_MUSIC)
-      }.build(),
-      AudioFormat.Builder().apply {
-        setChannelMask(CHANNEL_OUT_MONO)
-        setEncoding(FORMAT_ENCODING)
-        setSampleRate(SAMPLE_RATE)
-      }.build(),
-      outputBufferSize,
-      MODE_STREAM,
-      AUDIO_SESSION_ID
-    )
+  private var sampleRate = -1
+  private var audioSource = -1
+
+  private var inputBufferSize = -1
+  private var outputBufferSize = -1
+
+  private lateinit var input: AudioRecord
+  private lateinit var output: AudioTrack
 
   private val noisyAudioReceiver = object : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -68,8 +54,11 @@ class AudioMirrorService : Service() {
 
   override fun onCreate() {
     Log.d("AudioMirrorService", "Service created")
-
     if (SDK_INT >= 26) notification.createNotificationChannel()
+
+    prefs = PreferenceManager.getDefaultSharedPreferences(this)
+    prefs.registerOnSharedPreferenceChangeListener(this)
+
     start()
 
     registerReceiver(noisyAudioReceiver, IntentFilter(ACTION_AUDIO_BECOMING_NOISY))
@@ -90,7 +79,40 @@ class AudioMirrorService : Service() {
     return START_STICKY
   }
 
+  private fun initialize() {
+    Log.d("AudioMirrorService", "Initializing")
+
+    sampleRate = prefs.getInt(PREF_SAMPLE_RATE, 44100)
+    audioSource = prefs.getInt(PREF_AUDIO_SOURCE, MIC)
+
+    inputBufferSize = AudioRecord.getMinBufferSize(sampleRate, CHANNEL_IN_MONO, ENCODING_PCM_16BIT)
+    outputBufferSize = AudioTrack.getMinBufferSize(sampleRate, CHANNEL_OUT_MONO, ENCODING_PCM_16BIT)
+
+    if (::input.isInitialized) input.release()
+    if (::output.isInitialized) output.release()
+    
+    input =
+      AudioRecord(audioSource, sampleRate, CHANNEL_IN_MONO, ENCODING_PCM_16BIT, inputBufferSize)
+    output =
+      AudioTrack(
+        AudioAttributes.Builder().apply {
+          setLegacyStreamType(STREAM_MUSIC)
+          setUsage(USAGE_MEDIA)
+          setContentType(CONTENT_TYPE_MUSIC)
+        }.build(),
+        AudioFormat.Builder().apply {
+          setChannelMask(CHANNEL_OUT_MONO)
+          setEncoding(ENCODING_PCM_16BIT)
+          setSampleRate(sampleRate)
+        }.build(),
+        outputBufferSize,
+        MODE_STREAM,
+        /* audio session id */ 1
+      )
+  }
+
   private fun start() {
+    initialize()
     Log.d("AudioMirrorService", "Starting")
     unmute()
     startLoop()
@@ -148,10 +170,17 @@ class AudioMirrorService : Service() {
     }
   }
 
+  override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
+    when (key) {
+      PREF_SAMPLE_RATE -> sampleRate = sharedPreferences.getInt(PREF_SAMPLE_RATE, 44100)
+      PREF_AUDIO_SOURCE -> audioSource = sharedPreferences.getInt(PREF_AUDIO_SOURCE, MIC)
+    }
+    restart()
+  }
+
   companion object {
-    private const val SAMPLE_RATE = 44100
-    private const val FORMAT_ENCODING = ENCODING_PCM_16BIT
-    private const val AUDIO_SESSION_ID = 1
+    const val PREF_SAMPLE_RATE = "sample-rate"
+    const val PREF_AUDIO_SOURCE = "audio-source"
 
     const val ACTION_MUTE = "$APPLICATION_ID.MUTE"
     const val ACTION_UNMUTE = "$APPLICATION_ID.UNMUTE"
