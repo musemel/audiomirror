@@ -27,7 +27,7 @@ class AudioMirrorService : Service() {
   var muted = false
     private set
 
-  private var muteLock = Object()
+  private val muteLock = Object()
 
   private val notification = ActivityNotification(this)
 
