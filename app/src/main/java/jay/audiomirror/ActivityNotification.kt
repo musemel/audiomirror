@@ -3,7 +3,6 @@ package jay.audiomirror
 import android.annotation.TargetApi
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.NotificationManager.IMPORTANCE_LOW
 import android.app.PendingIntent
 import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.content.Context.NOTIFICATION_SERVICE
@@ -25,9 +24,9 @@ class ActivityNotification(private val service: AudioMirrorService) {
   fun createNotificationChannel(): NotificationChannel {
     Log.d(javaClass.simpleName, "Creating notification channel")
 
-    return notificationManager.getNotificationChannel(CHANNEL)
-      ?: NotificationChannel(CHANNEL, service.getString(R.string.channel), IMPORTANCE_LOW)
-        .also(notificationManager::createNotificationChannel)
+    return notificationManager.getNotificationChannel(CHANNEL) ?: NotificationChannel(
+      CHANNEL, service.getString(R.string.channel), NotificationManager.IMPORTANCE_LOW
+    ).also(notificationManager::createNotificationChannel)
   }
 
   fun update() {
