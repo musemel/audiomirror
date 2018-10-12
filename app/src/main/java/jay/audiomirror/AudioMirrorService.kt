@@ -27,6 +27,8 @@ class AudioMirrorService : Service() {
   var muted = false
     private set
 
+  private var muteLock = Object()
+
   private val notification = ActivityNotification(this)
 
   private val inputBufferSize =
@@ -95,6 +97,7 @@ class AudioMirrorService : Service() {
   private fun unmute() {
     Log.d("AudioMirrorService", "Unmuting audio")
     muted = false
+    synchronized(muteLock, muteLock::notifyAll)
     notification.update()
   }
 
@@ -118,7 +121,9 @@ class AudioMirrorService : Service() {
 
       val buffer = ByteArray(inputBufferSize)
 
-      while (!stopping) if (muted) Thread.sleep(100) else {
+      while (!stopping) {
+        if (muted) synchronized(muteLock, muteLock::wait)
+
         val size = input.read(buffer, 0, inputBufferSize)
         output.write(buffer, 0, size)
       }
