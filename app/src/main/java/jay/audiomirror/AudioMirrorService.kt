@@ -83,15 +83,17 @@ class AudioMirrorService : Service() {
     when (intent?.action) {
       ACTION_UNMUTE -> unmute()
       ACTION_MUTE -> mute()
+      ACTION_START -> start()
       ACTION_KILL -> stopSelf()
+      ACTION_RESTART -> restart()
     }
     return START_STICKY
   }
 
   private fun start() {
     Log.d("AudioMirrorService", "Starting")
-    startLoop()
     unmute()
+    startLoop()
   }
 
   private fun unmute() {
@@ -113,8 +115,16 @@ class AudioMirrorService : Service() {
     notification.update()
   }
 
-  private fun startLoop() = thread {
+  private fun restart() {
+    Log.d("AudioMirrorService", "Restarting")
+    synchronized(muteLock, muteLock::notifyAll)
+    stop()
+    start()
+  }
+
+  private fun startLoop() = thread(name = "AudioMirror loop") {
     Log.d("AudioMirrorService", "Starting record loop")
+    stopping = false
     try {
       input.startRecording()
       output.play()
@@ -145,6 +155,8 @@ class AudioMirrorService : Service() {
 
     const val ACTION_MUTE = "$APPLICATION_ID.MUTE"
     const val ACTION_UNMUTE = "$APPLICATION_ID.UNMUTE"
+    const val ACTION_START = "$APPLICATION_ID.START"
     const val ACTION_KILL = "$APPLICATION_ID.KILL"
+    const val ACTION_RESTART = "$APPLICATION_ID.RESTART"
   }
 }

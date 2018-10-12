@@ -5,5 +5,6 @@
   <string name="inactive">Audio Mirror is muted</string>
   <string name="unmute">Unmute</string>
   <string name="mute">Mute</string>
+  <string name="restart">Restart</string>
   <string name="channel">Activity notification</string>
 </resources>

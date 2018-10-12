@@ -11,6 +11,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import jay.audiomirror.AudioMirrorService.Companion.ACTION_KILL
 import jay.audiomirror.AudioMirrorService.Companion.ACTION_MUTE
+import jay.audiomirror.AudioMirrorService.Companion.ACTION_RESTART
 import jay.audiomirror.AudioMirrorService.Companion.ACTION_UNMUTE
 import jay.audiomirror.BuildConfig.APPLICATION_ID
 
@@ -39,6 +40,13 @@ class ActivityNotification(private val service: AudioMirrorService) {
       FLAG_UPDATE_CURRENT
     )
 
+    val restartIntent = PendingIntent.getService(
+      service, /* request code */ 0,
+      Intent(service, AudioMirrorService::class.java)
+        .setAction(ACTION_RESTART),
+      FLAG_UPDATE_CURRENT
+    )
+
     val deleteIntent = PendingIntent.getService(
       service, /* request code */ 0,
       Intent(service, AudioMirrorService::class.java)
@@ -54,6 +62,7 @@ class ActivityNotification(private val service: AudioMirrorService) {
         service.getString(if (service.muted) R.string.unmute else R.string.mute),
         toggleIntent
       )
+      addAction(R.drawable.restart, service.getString(R.string.restart), restartIntent)
       setDeleteIntent(deleteIntent)
       setOngoing(!service.muted)
     }.build()
