@@ -52,7 +52,7 @@ class ActivityNotification(private val service: AudioMirrorService) {
       setSmallIcon(if (service.muted) R.drawable.mic_off else R.drawable.mic)
       addAction(
         if (service.muted) R.drawable.mic else R.drawable.mic_off,
-        service.getString(if (service.muted) R.string.unmute else R.string.unmute),
+        service.getString(if (service.muted) R.string.unmute else R.string.mute),
         toggleIntent
       )
       setDeleteIntent(deleteIntent)
