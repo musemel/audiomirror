@@ -67,10 +67,17 @@ class ActivityNotification(private val service: AudioMirrorService) {
       setOngoing(!service.muted)
     }.build()
 
-    if (service.stopping) {
-      service.stopForeground(true)
-    } else {
-      service.startForeground(ID, notif)
+    when {
+      service.stopping -> {
+        service.stopForeground(true)
+      }
+      service.muted -> {
+        service.stopForeground(false)
+        notificationManager.notify(ID, notif)
+      }
+      !service.muted -> {
+        service.startForeground(ID, notif)
+      }
     }
   }
 
