@@ -4,7 +4,7 @@
   <background android:drawable="@color/primary" />
   <foreground>
     <aapt:attr name="android:drawable">
-      <inset android:inset="28dp">
+      <inset android:inset="21dp">
         <aapt:attr name="android:drawable">
           <vector
             android:width="52dp"
