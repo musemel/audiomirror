@@ -9,4 +9,5 @@
   <string name="channel">Activity notification</string>
   <string name="sampleRate">Sample rate</string>
   <string name="audioSource">Use camcorder microphone</string>
+  <string name="permissionMessage">This app requires permissions to record audio to mirror it to the speakers</string>
 </resources>

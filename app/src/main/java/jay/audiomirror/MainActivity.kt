@@ -16,6 +16,8 @@ import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.Toast
+import android.widget.Toast.LENGTH_LONG
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat.startForegroundService
 import jay.audiomirror.AudioMirrorService.Companion.ACTION_RESTART
@@ -63,7 +65,11 @@ class MainActivity : AppCompatActivity() {
   private fun runService() {
     if (SDK_INT >= 23 && checkSelfPermission(RECORD_AUDIO) != PERMISSION_GRANTED) {
       Log.d("MainActivity", "Requesting record audio permissions")
-      requestPermissions(arrayOf(RECORD_AUDIO), 0)
+
+      if (shouldShowRequestPermissionRationale(RECORD_AUDIO))
+        Toast.makeText(this, getString(R.string.permissionMessage), LENGTH_LONG).show()
+
+      requestPermissions(arrayOf(RECORD_AUDIO), RECORD_AUDIO_REQCODE)
       return
     }
 
@@ -71,13 +77,14 @@ class MainActivity : AppCompatActivity() {
     startForegroundService(this, Intent(this, AudioMirrorService::class.java))
   }
 
+
   override fun onRequestPermissionsResult(
-    requestCode: Int,
-    permissions: Array<out String>,
-    grantResults: IntArray
+    requestCode: Int, permissions: Array<out String>, grantResults: IntArray
   ) {
-    if (grantResults.getOrNull(permissions.indexOf(RECORD_AUDIO)) == PERMISSION_GRANTED) {
-      runService()
-    }
+    if (requestCode == RECORD_AUDIO_REQCODE) runService()
+  }
+
+  companion object {
+    const val RECORD_AUDIO_REQCODE = 1
   }
 }
