@@ -23,15 +23,24 @@ class ActivityNotification(private val service: AudioMirrorService) {
 
   @TargetApi(26)
   fun createNotificationChannel(): NotificationChannel {
-    Log.d(javaClass.simpleName, "Creating notification channel")
+    val channel = notificationManager.getNotificationChannel(CHANNEL)
+    if (channel != null) return channel
 
-    return notificationManager.getNotificationChannel(CHANNEL) ?: NotificationChannel(
-      CHANNEL, service.getString(R.string.channel), NotificationManager.IMPORTANCE_LOW
-    ).also(notificationManager::createNotificationChannel)
+    Log.d("ActivityNotification", "Creating notification channel")
+
+    val newChannel =
+      NotificationChannel(CHANNEL, service.getString(R.string.channel), NotificationManager.IMPORTANCE_LOW)
+    notificationManager.createNotificationChannel(newChannel)
+    return newChannel
   }
 
   fun update() {
-    Log.d(javaClass.simpleName, "Updating notification")
+    Log.d("ActivityNotification", "Updating notification")
+
+    if (service.stopping) {
+      service.stopForeground(false)
+      notificationManager.cancel(ID)
+    }
 
     val toggleIntent = PendingIntent.getService(
       service, /* request code */ 0,
@@ -67,17 +76,11 @@ class ActivityNotification(private val service: AudioMirrorService) {
       setOngoing(!service.muted)
     }.build()
 
-    when {
-      service.stopping -> {
-        service.stopForeground(true)
-      }
-      service.muted -> {
-        service.stopForeground(false)
-        notificationManager.notify(ID, notif)
-      }
-      !service.muted -> {
-        service.startForeground(ID, notif)
-      }
+    if (service.muted) {
+      service.stopForeground(false)
+      notificationManager.notify(ID, notif)
+    } else {
+      service.startForeground(ID, notif)
     }
   }
 
