@@ -40,6 +40,8 @@ class ActivityNotification(private val service: AudioMirrorService) {
     if (service.stopping) {
       service.stopForeground(false)
       notificationManager.cancel(ID)
+
+      if (!service.restarting) return
     }
 
     val toggleIntent = PendingIntent.getService(

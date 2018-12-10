@@ -23,6 +23,8 @@ import kotlin.concurrent.thread
 class AudioMirrorService : Service(), OnSharedPreferenceChangeListener {
   var stopping = false
     private set
+  var restarting = false
+    private set
   var muted = false
     private set
 
@@ -142,9 +144,11 @@ class AudioMirrorService : Service(), OnSharedPreferenceChangeListener {
 
   private fun restart() {
     Log.d("AudioMirrorService", "Restarting")
+    restarting = true
     synchronized(muteLock, muteLock::notifyAll)
     stop()
     start()
+    restarting = false
   }
 
   private fun startLoop() = thread(name = "AudioMirror loop") {
