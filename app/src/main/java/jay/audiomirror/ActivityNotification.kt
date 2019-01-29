@@ -58,6 +58,13 @@ class ActivityNotification(private val service: AudioMirrorService) {
       FLAG_UPDATE_CURRENT
     )
 
+    val stopIntent = PendingIntent.getService(
+            service, /* request code */ 0,
+            Intent(service, AudioMirrorService::class.java)
+                    .setAction(ACTION_STOP),
+            FLAG_UPDATE_CURRENT
+    )
+
     val deleteIntent = PendingIntent.getService(
       service, /* request code */ 0,
       Intent(service, AudioMirrorService::class.java)
@@ -74,6 +81,7 @@ class ActivityNotification(private val service: AudioMirrorService) {
         toggleIntent
       )
       addAction(R.drawable.restart, service.getString(R.string.restart), restartIntent)
+      addAction(R.drawable.restart, service.getString(R.string.stop), stopIntent)
       setDeleteIntent(deleteIntent)
       setOngoing(!service.muted)
     }.build()

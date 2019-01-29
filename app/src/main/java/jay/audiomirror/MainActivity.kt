@@ -21,6 +21,7 @@ import android.widget.Toast.LENGTH_LONG
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat.startForegroundService
 import jay.audiomirror.AudioMirrorService.Companion.ACTION_RESTART
+import jay.audiomirror.AudioMirrorService.Companion.ACTION_STOP
 import jay.audiomirror.AudioMirrorService.Companion.PREF_AUDIO_SOURCE
 import jay.audiomirror.AudioMirrorService.Companion.PREF_SAMPLE_RATE
 import kotlinx.android.synthetic.main.main.*
@@ -43,6 +44,10 @@ class MainActivity : AppCompatActivity() {
 
     restartButton.setOnClickListener {
       startService(Intent(this, AudioMirrorService::class.java).setAction(ACTION_RESTART))
+    }
+
+    stopButton.setOnClickListener {
+      startService(Intent(this, AudioMirrorService::class.java).setAction(ACTION_STOP))
     }
 
     sampleRateSpinner.adapter =

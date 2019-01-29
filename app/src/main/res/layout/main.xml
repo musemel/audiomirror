@@ -63,11 +63,17 @@
     />
 
   <Button
-    android:id="@+id/restartButton"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_margin="16dp"
-    android:text="@string/restart"
-    />
+      android:id="@+id/stopButton"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_margin="16dp"
+      android:text="@string/stop" />
+
+  <Button
+      android:id="@+id/restartButton"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_margin="16dp"
+      android:text="@string/restart" />
 
 </LinearLayout>
